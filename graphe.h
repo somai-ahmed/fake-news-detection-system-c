@@ -43,8 +43,5 @@ void simulerSuppression(grapheReseau g, int idArt);
 int neutraliserPropagation(grapheReseau g, int idSrc, int idDest);
 
 
-int paires(grapheReseau g , int i,int j,int seuil);
-void chainecitationssuspectes(grapheReseau g , int seuil);
-
 #endif
 
