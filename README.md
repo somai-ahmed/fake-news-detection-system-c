@@ -100,6 +100,9 @@ Compatible with **GCC** and **Clang** (C99 standard). On Windows, `<windows.h>` 
 
 ---
 
+[!NOTE]
+This application is currently available only in French. All interfaces, messages, and content are provided in French.
+
 ## 🧠 Technical Design
 
 ### ADT ELEMENT — `eltarticle.h / .c`
