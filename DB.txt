@@ -1,0 +1,45 @@
+# ============================================
+# RESEAU DE DESINFORMATION - TUNISIE
+# ============================================
+# FORMAT :
+# A id titre source score jour mois annee heure minute
+# C id_source id_destination
+#
+# REGLES :
+# - Les articles (A) sont declares avant les citations (C)
+# - Les identifiants commencent a 0
+# - Le titre ne contient pas d'espaces (underscore utilise)
+# - Les citations respectent l'ordre chronologique
+# ============================================
+
+# ===== ARTICLES =====
+# id | titre | source | score | date (jj mm aaaa hh min)
+A 0 "La_verite_sur_le_vaccin_alerte_secret_choc"   page_TunisieActu  8  15 3 2025 9  0
+A 1 "Etude_exclusif_urgent_OMS_choc_complot" Kapitalis 45  15 3 2025 8  0
+A 2 "Partagez_avant_suppression_urgent_choc_alerte" TunisieNumerique  5  15 3 2025 11 0
+A 3 "Communique_officiel_MinSante_MinistereSante"   MinistereSante   90  15 3 2025 7  0
+A 4 "Wake_up_complot_interdit_censure_vaccin"       RTArabic         15  15 3 2025 14 0
+A 5 "Analyse_scientifique_vaccin" ScienceDirect 85 05 03 2025 11 00
+A 6 "Fake_news_reseau_social" FacebookNews 30 14 01 2025 12 00
+A 7 "Rapport_officiel_verifie" WHO 95 20 01 5 10 30
+A 8 "Censure_media_verite_cachee" BlogLibre 25 14 01 2026 12 00
+A 9 "Debunking_info_fausse" FactCheckTN 88 05 02 2026 09 00
+
+# ===== CITATIONS =====
+# format : C source destination (source cite destination)
+C 0 1
+C 0 2
+C 1 2
+C 3 0
+C 4 0
+C 4 3
+C 5 2
+C 6 3
+C 7 5
+C 8 6
+C 9 4
+
+# ===== CITATION MUTUELLE =====
+# Articles 6 et 8 se citent mutuellement
+C 6 8
+C 8 6

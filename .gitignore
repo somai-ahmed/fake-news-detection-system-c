@@ -1,0 +1,16 @@
+# Compiled object files
+*.o
+
+# Executable
+fake_news_detector
+a.out
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
