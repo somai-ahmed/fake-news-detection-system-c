@@ -104,6 +104,20 @@ int lireEntierBorne(const char *message, int min, int max) {
     return valeur;
 }
 
+void afficherBanniere() {
+    printf("\n");
+    typewriter(BOLD ROUGE "  ╔══════════════════════════════════════════════╗\n", 2);
+    typewriter(BOLD ROUGE "  ║                                              ║\n", 2);
+    typewriter(BOLD ROUGE "  ║         " JAUNE "  FAKE NEWS DETECTOR  " ROUGE "               ║\n", 3);
+    typewriter(BOLD ROUGE "  ║           " JAUNE "Projet ASD 2" ROUGE "                       ║\n", 3);
+    typewriter(BOLD ROUGE "  ║              " CYAN "19/04/2026" ROUGE "                      ║\n", 3);
+    typewriter(BOLD ROUGE "  ║                                              ║\n", 2);
+    typewriter(BOLD ROUGE "  ╚══════════════════════════════════════════════╝\n" RESET, 2);
+    printf("\n");
+    spinner("  Initialisation du Programme", 20);
+    printf("\n");
+}
+
 void afficherMenu() {
     printf("\n");
     printf(BOLD CYAN "  ┌──────────────────────────────────────────┐\n");
@@ -138,6 +152,7 @@ void afficherMenu() {
     printf("  " BOLD JAUNE "--- BONUS ---" RESET "\n");
     printf("  18.  Simuler la suppression d'un article\n");
     printf("  19.  Neutraliser une propagation\n");
+    printf("20. ChainesCitationsSuspectes \n");
     printf("\n");
     printf("   " ROUGE "0.  Quitter" RESET "\n");
     printf("\n");
@@ -222,6 +237,10 @@ int main() {
         printf(ROUGE "Impossible d'initialiser le programme.\n" RESET);
         return 1;
     }
+
+    afficherBanniere();
+    SLEEP_MS(2000);
+    clears();
 
     do {
         afficherMenu();
@@ -367,6 +386,12 @@ int main() {
             int dest = lireEntier("  ID article destination : ");
             spinner("  Neutralisation en cours", 18);
             neutraliserPropagation(g, src, dest);
+            break;
+        }
+        case 20: {
+            if (g == NULL) break;
+            int seuil = lireEntierBorne("  Seuil de fiabilite [0-100] : ", 0, 100);
+            chainecitationsSuspectes(g, seuil);
             break;
         }
 
