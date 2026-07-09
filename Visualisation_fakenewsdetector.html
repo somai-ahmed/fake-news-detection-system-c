@@ -162,6 +162,7 @@ footer strong { color: var(--cyan); }
 #bfs-panel h4 { color: var(--cyan); margin-bottom: .5rem; }
 #bfs-log { color: #8899aa; line-height: 1.8; }
 </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -296,16 +297,16 @@ footer strong { color: var(--cyan); }
 // DATA
 // ═══════════════════════════════════════════════════════
 const articles = [
-  { id:0, titre:"Alerte vaccin secret choc",         source:"TunisieActu",     score:10,  date:"15/05/2024", x:0, y:0, r:22 },
-  { id:1, titre:"Etude OMS complot exclusif",        source:"Kapitalis",       score:45,  date:"12/02/2024", x:0, y:0, r:22 },
-  { id:2, titre:"Communiqué officiel santé",         source:"MinistereSante",  score:90,  date:"10/01/2024", x:0, y:0, r:24 },
-  { id:3, titre:"Urgent partagez avant suppression", source:"TunisieNumerique",score:5,   date:"20/08/2025", x:0, y:0, r:22 },
-  { id:4, titre:"Vaccin interdit révélé",            source:"RTArabic",        score:20,  date:"12/11/2024", x:0, y:0, r:22 },
-  { id:5, titre:"Analyse scientifique vaccin",       source:"ScienceDirect",   score:85,  date:"05/03/2025", x:0, y:0, r:23 },
-  { id:6, titre:"Fake news réseau social",           source:"FacebookNews",    score:30,  date:"14/01/2025", x:0, y:0, r:22 },
-  { id:7, titre:"Rapport officiel vérifié",          source:"WHO",             score:95,  date:"20/01/2005", x:0, y:0, r:25 },
-  { id:8, titre:"Censure média vérité cachée",       source:"BlogLibre",       score:25,  date:"14/01/2026", x:0, y:0, r:22 },
-  { id:9, titre:"Debunking info fausse",             source:"FactCheckTN",     score:88,  date:"05/02/2026", x:0, y:0, r:23 }
+  { id:0, titre:"La verite sur le vaccin alerte secret choc",   source:"page_TunisieActu",  score:8,   date:"15/03/2025", x:0, y:0, r:22 },
+  { id:1, titre:"Etude exclusif urgent OMS choc complot",       source:"Kapitalis",       score:45,  date:"15/03/2025", x:0, y:0, r:22 },
+  { id:2, titre:"Partagez avant suppression urgent choc alerte", source:"TunisieNumerique",score:5,   date:"15/03/2025", x:0, y:0, r:22 },
+  { id:3, titre:"Communique officiel MinSante MinistereSante",  source:"MinistereSante",  score:90,  date:"15/03/2025", x:0, y:0, r:24 },
+  { id:4, titre:"Wake up complot interdit censure vaccin",      source:"RTArabic",        score:15,  date:"15/03/2025", x:0, y:0, r:22 },
+  { id:5, titre:"Analyse scientifique vaccin",                  source:"ScienceDirect",   score:85,  date:"05/03/2025", x:0, y:0, r:23 },
+  { id:6, titre:"Fake news reseau social",                      source:"FacebookNews",    score:30,  date:"14/01/2025", x:0, y:0, r:22 },
+  { id:7, titre:"Rapport officiel verifie",                     source:"WHO",             score:95,  date:"20/01/2025", x:0, y:0, r:25 },
+  { id:8, titre:"Censure media verite cachee",                  source:"BlogLibre",       score:25,  date:"14/01/2026", x:0, y:0, r:22 },
+  { id:9, titre:"Debunking info fausse",                        source:"FactCheckTN",     score:88,  date:"05/02/2026", x:0, y:0, r:23 }
 ];
 
 // citations[i] = [src, dest]  meaning src cites dest
@@ -732,9 +733,7 @@ function buildFeaturesGrid() {
   });
 }
 
-// ═══════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════
+
 window.addEventListener('load', () => {
   initGraph();
   buildScoreGrid();
