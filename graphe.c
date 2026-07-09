@@ -1140,4 +1140,65 @@ int neutraliserPropagation(grapheReseau g, int idSrc, int idDest) {
     return 1;
 }
 
+// Vérifie si articles[i] et articles[j] forment une paire suspecte :
+// - i cite j (ou j cite i)
+// - les deux ont un score < seuil
+int paires(grapheReseau g, int i, int j, int seuil) {
+
+    if (g == NULL) {
+        printf("graphe invalide !\n");
+        return 0;
+    }
+
+    // Vérifier que les deux articles existent
+    if (g->articles[i] == ELEMENT_VIDE || g->articles[j] == ELEMENT_VIDE)
+        return 0;
+
+    // Vérifier que i cite j
+    int iCiteJ = 0;
+    NOEUD courant = g->adjList[i]->tete;
+    while (courant != NULL) {   // tester courant != NULL et non courant->info
+        if (courant->info != ELEMENT_VIDE && courant->info->id == j) {
+            iCiteJ = 1;
+            break;              // sortir dès qu'on trouve
+        }
+        courant = courant->suivant;  // avancer
+    }
+
+    if (!iCiteJ) return 0;  // i ne cite pas j → pas une paire
+
+    // Vérifier que les deux scores sont sous le seuil
+    if (g->articles[i]->score_fiabilite < seuil &&
+        g->articles[j]->score_fiabilite < seuil) {
+        return 1;   // paire suspecte VALIDE
+    }
+
+    return 0;
+}
+
+void chainecitationsSuspectes(grapheReseau g, int seuil) {
+    int k = 0;
+
+    if (g == NULL) {
+        printf("graphe invalide !\n");
+        return;
+    }
+
+    printf("\n=== Chaine des citations suspectes (seuil = %d) ===\n\n", seuil);
+
+    for (int i = 0; i < g->V; i++) {   
+        for (int j = 0; j < g->V; j++) { 
+            if (i == j) continue;                 // éviter i==j
+            if (paires(g, i, j, seuil)) {         
+                printf(ROUGE "  Article %d (\"%s\", score:%d)"
+                             " --> Article %d (\"%s\", score:%d)\n" RESET,
+                       i, g->articles[i]->titre, g->articles[i]->score_fiabilite,
+                       j, g->articles[j]->titre, g->articles[j]->score_fiabilite);
+                k++;
+            }
+        }
+    }
+
+    printf(JAUNE "\nNombre total de paires suspectes trouvees : %d\n" RESET, k);
+}
 
