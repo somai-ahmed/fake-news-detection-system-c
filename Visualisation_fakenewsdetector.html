@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fake News Detector — ASD2 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060a12;
+  --bg2: #0c1220;
+  --bg3: #111927;
+  --red: #ff2244;
+  --amber: #ffb800;
+  --green: #00e87a;
+  --cyan: #00c8ff;
+  --purple: #a855f7;
+  --text: #dde4f0;
+  --muted: #4a5568;
+  --border: rgba(0,200,255,0.15);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; overflow-x: hidden; }
+::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: var(--bg2); } ::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 3px; }
+
+/* ── HERO ── */
+#hero {
+  min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; text-align: center; padding: 2rem;
+}
+#canvas-bg { position: absolute; inset: 0; z-index: 0; }
+.hero-content { position: relative; z-index: 1; }
+.hero-badge {
+  display: inline-block; background: rgba(255,34,68,.15); border: 1px solid var(--red);
+  color: var(--red); padding: .3rem 1rem; border-radius: 999px; font-family: 'Share Tech Mono';
+  font-size: .75rem; letter-spacing: .15em; margin-bottom: 1.5rem; animation: pulse-badge 2s infinite;
+}
+@keyframes pulse-badge { 0%,100%{opacity:.7} 50%{opacity:1} }
+.hero-title {
+  font-family: 'Orbitron', sans-serif; font-weight: 900;
+  font-size: clamp(2.2rem, 6vw, 5rem); line-height: 1.05;
+  background: linear-gradient(135deg, #ff2244 0%, #ff6b35 40%, #ffb800 70%, #00e87a 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin-bottom: .8rem; letter-spacing: -.02em;
+}
+.hero-sub { font-size: 1.1rem; color: var(--cyan); font-family: 'Share Tech Mono'; letter-spacing: .05em; margin-bottom: .5rem; }
+.hero-desc { font-size: .95rem; color: #7a8a9a; max-width: 540px; margin: 0 auto 2.5rem; line-height: 1.6; }
+.terminal-box {
+  background: rgba(0,0,0,.7); border: 1px solid var(--border); border-radius: 10px;
+  padding: 1.2rem 1.8rem; font-family: 'Share Tech Mono'; font-size: .82rem; text-align: left;
+  max-width: 560px; margin: 0 auto; backdrop-filter: blur(8px);
+}
+.terminal-line { display: flex; gap: .6rem; margin-bottom: .4rem; }
+.t-prompt { color: var(--green); } .t-cmd { color: var(--cyan); } .t-out { color: #8899aa; }
+.scroll-hint { margin-top: 2.5rem; color: var(--muted); font-size: .85rem; animation: bounce 2s infinite; }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)} }
+
+/* ── SECTION BASE ── */
+.section { padding: 5rem 2rem; max-width: 1100px; margin: 0 auto; }
+.section-label { font-family: 'Share Tech Mono'; color: var(--cyan); font-size: .75rem; letter-spacing: .2em; text-transform: uppercase; margin-bottom: .6rem; opacity: .7; }
+.section-title { font-family: 'Orbitron'; font-size: clamp(1.4rem, 3vw, 2.2rem); font-weight: 700; margin-bottom: .5rem; }
+.section-title span { color: var(--cyan); }
+.section-divider { width: 60px; height: 3px; background: linear-gradient(90deg,var(--cyan),transparent); margin: 1rem 0 2.5rem; border-radius: 2px; }
+
+/* ── ARCHITECTURE ── */
+.arch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+.arch-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 1.4rem 1rem; text-align: center; transition: transform .25s, border-color .25s, box-shadow .25s;
+  cursor: default;
+}
+.arch-card:hover { transform: translateY(-4px); border-color: var(--cyan); box-shadow: 0 0 20px rgba(0,200,255,.15); }
+.arch-icon { font-size: 2rem; margin-bottom: .7rem; display: block; }
+.arch-name { font-family: 'Share Tech Mono'; font-size: .9rem; color: var(--cyan); margin-bottom: .4rem; }
+.arch-desc { font-size: .75rem; color: #6a7a8a; line-height: 1.5; }
+.arch-dep { font-size: .7rem; color: var(--amber); margin-top: .5rem; font-family: 'Share Tech Mono'; }
+.arch-arrow { text-align: center; font-size: 1.2rem; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+
+/* ── GRAPH ── */
+.graph-wrapper {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 16px;
+  overflow: hidden; position: relative;
+}
+.graph-header { padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .8rem; }
+.graph-title { font-family: 'Orbitron'; font-size: 1rem; color: var(--cyan); }
+.graph-controls { display: flex; gap: .6rem; flex-wrap: wrap; }
+.btn {
+  font-family: 'Share Tech Mono'; font-size: .78rem; padding: .45rem 1rem; border-radius: 6px;
+  border: 1px solid; cursor: pointer; transition: all .2s; letter-spacing: .05em;
+}
+.btn-red { color: var(--red); border-color: var(--red); background: rgba(255,34,68,.08); }
+.btn-red:hover { background: rgba(255,34,68,.2); box-shadow: 0 0 12px rgba(255,34,68,.3); }
+.btn-cyan { color: var(--cyan); border-color: var(--cyan); background: rgba(0,200,255,.08); }
+.btn-cyan:hover { background: rgba(0,200,255,.2); box-shadow: 0 0 12px rgba(0,200,255,.3); }
+.btn-green { color: var(--green); border-color: var(--green); background: rgba(0,232,122,.08); }
+.btn-green:hover { background: rgba(0,232,122,.2); }
+.btn-amber { color: var(--amber); border-color: var(--amber); background: rgba(255,184,0,.08); }
+.btn-amber:hover { background: rgba(255,184,0,.2); }
+#graph-canvas { display: block; width: 100%; cursor: crosshair; }
+.graph-legend { padding: .8rem 1.5rem; display: flex; gap: 1.5rem; flex-wrap: wrap; border-top: 1px solid var(--border); }
+.legend-item { display: flex; align-items: center; gap: .5rem; font-size: .78rem; font-family: 'Share Tech Mono'; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+.graph-info {
+  padding: .8rem 1.5rem; font-family: 'Share Tech Mono'; font-size: .8rem;
+  color: var(--cyan); min-height: 2.5rem; border-top: 1px solid var(--border);
+  background: rgba(0,200,255,.03);
+}
+
+/* ── SCORE ANALYSIS ── */
+.score-grid { display: flex; flex-direction: column; gap: .75rem; }
+.score-row { display: flex; align-items: center; gap: 1rem; }
+.score-id { font-family: 'Share Tech Mono'; font-size: .75rem; color: var(--muted); width: 24px; text-align: right; flex-shrink: 0; }
+.score-label { font-size: .82rem; width: 220px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.score-bar-bg { flex: 1; height: 20px; background: rgba(255,255,255,.04); border-radius: 4px; overflow: hidden; position: relative; }
+.score-bar { height: 100%; border-radius: 4px; transition: width 1.2s cubic-bezier(.4,0,.2,1); width: 0; position: relative; }
+.score-bar::after { content: ''; position: absolute; top: 0; right: 0; width: 60%; height: 100%; background: rgba(255,255,255,.15); }
+.score-val { font-family: 'Share Tech Mono'; font-size: .75rem; width: 32px; flex-shrink: 0; text-align: right; }
+.score-tag { font-size: .65rem; font-family: 'Share Tech Mono'; padding: .15rem .5rem; border-radius: 3px; flex-shrink: 0; }
+.tag-fake { background: rgba(255,34,68,.2); color: var(--red); border: 1px solid rgba(255,34,68,.3); }
+.tag-suspect { background: rgba(255,184,0,.2); color: var(--amber); border: 1px solid rgba(255,184,0,.3); }
+.tag-fiable { background: rgba(0,232,122,.15); color: var(--green); border: 1px solid rgba(0,232,122,.3); }
+
+/* ── FEATURES ── */
+.features-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .7rem; }
+.feature-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+  padding: .9rem 1.1rem; display: flex; align-items: flex-start; gap: .8rem;
+  transition: border-color .2s, background .2s;
+}
+.feature-card:hover { border-color: rgba(0,200,255,.4); background: var(--bg3); }
+.feature-num { font-family: 'Orbitron'; font-size: .75rem; color: var(--muted); flex-shrink: 0; min-width: 24px; margin-top: 2px; }
+.feature-icon { font-size: 1.1rem; flex-shrink: 0; }
+.feature-text h4 { font-size: .85rem; font-weight: 600; margin-bottom: .2rem; }
+.feature-text p { font-size: .72rem; color: #6a7a8a; line-height: 1.4; }
+.feature-cat { display: inline-block; font-family: 'Share Tech Mono'; font-size: .6rem; color: var(--cyan); background: rgba(0,200,255,.1); padding: .1rem .4rem; border-radius: 3px; margin-bottom: .3rem; }
+
+/* ── FOOTER ── */
+footer {
+  text-align: center; padding: 3rem 2rem; border-top: 1px solid var(--border);
+  font-family: 'Share Tech Mono'; font-size: .78rem; color: var(--muted);
+}
+footer strong { color: var(--cyan); }
+
+/* ── TOOLTIP ── */
+#tooltip {
+  position: fixed; background: rgba(5,10,20,.95); border: 1px solid var(--cyan);
+  border-radius: 8px; padding: .7rem 1rem; font-family: 'Share Tech Mono'; font-size: .75rem;
+  pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 999; max-width: 260px;
+  backdrop-filter: blur(8px); box-shadow: 0 0 20px rgba(0,200,255,.2);
+}
+#tooltip .tt-title { color: var(--cyan); margin-bottom: .3rem; font-size: .82rem; }
+#tooltip .tt-row { display: flex; justify-content: space-between; gap: 1rem; color: #8899aa; }
+#tooltip .tt-score { color: var(--amber); font-weight: bold; }
+
+/* BFS info panel */
+#bfs-panel {
+  display: none; background: rgba(0,200,255,.05); border: 1px solid rgba(0,200,255,.2);
+  border-radius: 8px; padding: 1rem 1.5rem; margin-top: .5rem;
+  font-family: 'Share Tech Mono'; font-size: .8rem;
+}
+#bfs-panel h4 { color: var(--cyan); margin-bottom: .5rem; }
+#bfs-log { color: #8899aa; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<canvas id="canvas-bg"></canvas>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section id="hero">
+  <div class="hero-content">
+    <div class="hero-badge">⚠ PROJET ASD2 — ISG TUNIS 2026</div>
+    <h1 class="hero-title" id="hero-title"></h1>
+    <p class="hero-sub">Système de Détection de Désinformation</p>
+    <p class="hero-desc">Modélisation d'un réseau de citations d'articles via un <strong>graphe orienté</strong>, avec propagation BFS, analyse sémantique et détection automatique de fake news.</p>
+    <div class="terminal-box">
+      <div class="terminal-line"><span class="t-prompt">$</span><span class="t-cmd">gcc -o detector main.C graphe.C lstrp.C eltarticle.C fakesdb.C</span></div>
+      <div class="terminal-line"><span class="t-prompt">$</span><span class="t-cmd">./detector</span></div>
+      <div class="terminal-line"><span class="t-out">  Initialisation du Programme... ✅</span></div>
+      <div class="terminal-line"><span class="t-out">  Réseau chargé : 10 articles, 13 citations</span></div>
+      <div class="terminal-line"><span class="t-out" style="color:var(--red)">  ⚠ 5 articles suspects détectés !</span></div>
+    </div>
+    <p class="scroll-hint">↓ Explorer le projet ↓</p>
+  </div>
+</section>
+
+<!-- ═══════════ ARCHITECTURE ═══════════ -->
+<div class="section">
+  <div class="section-label">// Structure du Code</div>
+  <h2 class="section-title">Architecture du <span>Projet</span></h2>
+  <div class="section-divider"></div>
+  <div class="arch-grid">
+    <div class="arch-card">
+      <span class="arch-icon">📄</span>
+      <div class="arch-name">eltarticle</div>
+      <div class="arch-desc">TDA Article — structure de données principale avec id, titre, source, score, date</div>
+      <div class="arch-dep">↳ creer / copier / comparer</div>
+    </div>
+    <div class="arch-card">
+      <span class="arch-icon">🔗</span>
+      <div class="arch-name">liste.h</div>
+      <div class="arch-desc">Interface TDA Liste chaînée — définit LISTE, NOEUD et les opérations fondamentales</div>
+      <div class="arch-dep">↳ interface publique</div>
+    </div>
+    <div class="arch-card">
+      <span class="arch-icon">⛓</span>
+      <div class="arch-name">lstrp</div>
+      <div class="arch-desc">Implémentation de la liste chaînée pour les listes d'adjacence du graphe</div>
+      <div class="arch-dep">↳ inserer / supprimer / listeAfficher</div>
+    </div>
+    <div class="arch-card">
+      <span class="arch-icon">🕵️</span>
+      <div class="arch-name">fakesdb</div>
+      <div class="arch-desc">Base de données des mots-clés suspects et phrases de désinformation (14 entrées)</div>
+      <div class="arch-dep">↳ 6 phrases + 8 mots suspects</div>
+    </div>
+    <div class="arch-card" style="border-color:rgba(0,200,255,.35)">
+      <span class="arch-icon">🕸</span>
+      <div class="arch-name">graphe</div>
+      <div class="arch-desc">Cœur du projet — graphe orienté, BFS, détection, propagation, neutralisation</div>
+      <div class="arch-dep">↳ 19 fonctions principales</div>
+    </div>
+    <div class="arch-card">
+      <span class="arch-icon">🖥</span>
+      <div class="arch-name">main</div>
+      <div class="arch-desc">Interface utilisateur — menu interactif 19 options avec animations terminal</div>
+      <div class="arch-dep">↳ typewriter + spinner + colors</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ GRAPH ═══════════ -->
+<div style="padding: 0 2rem 4rem; max-width:1100px; margin:0 auto;">
+  <div class="section-label">// Visualisation Temps Réel</div>
+  <h2 class="section-title">Réseau de <span>Citations</span></h2>
+  <div class="section-divider"></div>
+
+  <div class="graph-wrapper">
+    <div class="graph-header">
+      <div class="graph-title">grapheReseau — 10 articles | 13 citations</div>
+      <div class="graph-controls">
+        <button class="btn btn-amber" onclick="resetGraph()">↺ Reset</button>
+        <button class="btn btn-red" onclick="startDemo('propagation')" title="Simuler propagation depuis un nœud (BFS inverse)">📡 Propagation BFS</button>
+        <button class="btn btn-cyan" onclick="startDemo('accessible')" title="Articles accessibles (BFS direct)">🔍 Accessibles BFS</button>
+        <button class="btn btn-green" onclick="detectFakes()">🧪 Détecter Fake News</button>
+      </div>
+    </div>
+    <canvas id="graph-canvas" height="460"></canvas>
+    <div class="graph-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Fake / Non-fiable (score &lt; 40)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div> Suspect (40–70)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Fiable (score &gt; 70)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#8844ee;width:12px;height:3px;border-radius:2px"></div> Citation mutuelle</div>
+    </div>
+    <div class="graph-info" id="graph-info">💡 Cliquez sur un nœud pour inspecter l'article — utilisez les boutons pour lancer une simulation BFS</div>
+  </div>
+
+  <div id="bfs-panel">
+    <h4 id="bfs-title">BFS</h4>
+    <div id="bfs-log"></div>
+  </div>
+</div>
+
+<!-- ═══════════ SCORE ANALYSIS ═══════════ -->
+<div class="section">
+  <div class="section-label">// analyserReseau(g)</div>
+  <h2 class="section-title">Analyse des <span>Articles</span></h2>
+  <div class="section-divider"></div>
+  <div class="score-grid" id="score-grid"></div>
+</div>
+
+<!-- ═══════════ FEATURES ═══════════ -->
+<div class="section">
+  <div class="section-label">// Menu Principal — 19 Fonctions</div>
+  <h2 class="section-title">Fonctionnalités du <span>Système</span></h2>
+  <div class="section-divider"></div>
+  <div class="features-grid" id="features-grid"></div>
+</div>
+
+<footer>
+  <p>FAKE NEWS DETECTOR — Projet <strong>ASD2</strong> | ISG Tunis — Avril <strong>2026</strong></p>
+  <p style="margin-top:.4rem">Langage : <strong>C</strong> | Structures : Graphe Orienté + Liste Chaînée | Algorithme : <strong>BFS</strong></p>
+</footer>
+
+<div id="tooltip">
+  <div class="tt-title" id="tt-title"></div>
+  <div class="tt-row"><span>Source</span><span id="tt-source"></span></div>
+  <div class="tt-row"><span>Score</span><span class="tt-score" id="tt-score"></span></div>
+  <div class="tt-row"><span>Date</span><span id="tt-date"></span></div>
+  <div class="tt-row" style="margin-top:.4rem"><span id="tt-status"></span></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════
+const articles = [
+  { id:0, titre:"Alerte vaccin secret choc",         source:"TunisieActu",     score:10,  date:"15/05/2024", x:0, y:0, r:22 },
+  { id:1, titre:"Etude OMS complot exclusif",        source:"Kapitalis",       score:45,  date:"12/02/2024", x:0, y:0, r:22 },
+  { id:2, titre:"Communiqué officiel santé",         source:"MinistereSante",  score:90,  date:"10/01/2024", x:0, y:0, r:24 },
+  { id:3, titre:"Urgent partagez avant suppression", source:"TunisieNumerique",score:5,   date:"20/08/2025", x:0, y:0, r:22 },
+  { id:4, titre:"Vaccin interdit révélé",            source:"RTArabic",        score:20,  date:"12/11/2024", x:0, y:0, r:22 },
+  { id:5, titre:"Analyse scientifique vaccin",       source:"ScienceDirect",   score:85,  date:"05/03/2025", x:0, y:0, r:23 },
+  { id:6, titre:"Fake news réseau social",           source:"FacebookNews",    score:30,  date:"14/01/2025", x:0, y:0, r:22 },
+  { id:7, titre:"Rapport officiel vérifié",          source:"WHO",             score:95,  date:"20/01/2005", x:0, y:0, r:25 },
+  { id:8, titre:"Censure média vérité cachée",       source:"BlogLibre",       score:25,  date:"14/01/2026", x:0, y:0, r:22 },
+  { id:9, titre:"Debunking info fausse",             source:"FactCheckTN",     score:88,  date:"05/02/2026", x:0, y:0, r:23 }
+];
+
+// citations[i] = [src, dest]  meaning src cites dest
+const citations = [[0,1],[0,2],[1,2],[3,0],[4,0],[4,3],[5,2],[6,3],[7,5],[8,6],[9,4],[6,8],[8,6]];
+
+// Detect mutual (both directions)
+const mutuals = new Set();
+for (const [a,b] of citations) {
+  if (citations.some(([x,y])=>x===b&&y===a)) mutuals.add(`${Math.min(a,b)}-${Math.max(a,b)}`);
+}
+
+// Layout positions (normalized 0-1)
+const layout = [
+  [0.28, 0.70], // 0
+  [0.46, 0.52], // 1
+  [0.34, 0.15], // 2
+  [0.43, 0.87], // 3
+  [0.12, 0.84], // 4
+  [0.61, 0.22], // 5
+  [0.70, 0.75], // 6
+  [0.10, 0.42], // 7
+  [0.88, 0.90], // 8
+  [0.86, 0.46], // 9
+];
+
+function scoreColor(s) {
+  if (s < 40) return '#ff2244';
+  if (s < 70) return '#ffb800';
+  return '#00e87a';
+}
+
+function classifyArticle(a) {
+  const t = a.titre.toLowerCase();
+  const fakes = ["ils vous cachent","partagez avant suppression","ce qu on vous cache","la verite sur","les medias ne disent pas","wake up"];
+  const suspects = ["alerte","urgent","exclusif","censure","complot","secret","interdit","choc"];
+  for (const f of fakes) if (t.includes(f)) return 'FAKE';
+  for (const s of suspects) if (t.includes(s)) return 'SUSPECT';
+  if (a.score < 30) return 'FAKE';
+  return 'FIABLE';
+}
+
+// ═══════════════════════════════════════════════════════
+// BACKGROUND PARTICLES
+// ═══════════════════════════════════════════════════════
+(function() {
+  const bg = document.getElementById('canvas-bg');
+  const ctx = bg.getContext('2d');
+  let W, H, pts = [];
+  function resize() {
+    W = bg.width = window.innerWidth; H = bg.height = window.innerHeight;
+    pts = Array.from({length:60}, ()=>({
+      x: Math.random()*W, y: Math.random()*H,
+      vx: (Math.random()-.5)*.3, vy: (Math.random()-.5)*.3,
+      r: Math.random()*1.5+.5, a: Math.random()
+    }));
+  }
+  window.addEventListener('resize', resize); resize();
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#060a12'; ctx.fillRect(0,0,W,H);
+    for (let i=0;i<pts.length;i++) {
+      const p=pts[i];
+      for (let j=i+1;j<pts.length;j++) {
+        const q=pts[j], dx=p.x-q.x, dy=p.y-q.y, d=Math.sqrt(dx*dx+dy*dy);
+        if (d<120) {
+          ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y);
+          ctx.strokeStyle=`rgba(0,200,255,${.08*(1-d/120)})`; ctx.lineWidth=.5; ctx.stroke();
+        }
+      }
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(0,200,255,${p.a*.4})`; ctx.fill();
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>W) p.vx*=-1;
+      if(p.y<0||p.y>H) p.vy*=-1;
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ═══════════════════════════════════════════════════════
+// HERO TYPEWRITER
+// ═══════════════════════════════════════════════════════
+(function() {
+  const el = document.getElementById('hero-title');
+  const txt = "FAKE NEWS\nDETECTOR";
+  let i=0;
+  function type() {
+    if(i<=txt.length) {
+      el.innerHTML = txt.slice(0,i).replace('\n','<br>') + '<span style="animation:pulse-badge 1s infinite;color:var(--cyan)">|</span>';
+      i++; setTimeout(type, i===txt.indexOf('\n')+1 ? 400 : 60);
+    } else {
+      el.innerHTML = txt.replace('\n','<br>');
+    }
+  }
+  setTimeout(type, 500);
+})();
+
+// ═══════════════════════════════════════════════════════
+// GRAPH CANVAS
+// ═══════════════════════════════════════════════════════
+const graphCanvas = document.getElementById('graph-canvas');
+const gctx = graphCanvas.getContext('2d');
+let nodeStates = {}; // id -> 'normal'|'active'|'source'|'visited'|'fake'
+let animTimer = null;
+let hoveredNode = null;
+let pendingMode = null;
+
+function initGraph() {
+  const W = graphCanvas.offsetWidth;
+  graphCanvas.width = W; graphCanvas.height = 460;
+  articles.forEach((a,i) => {
+    a.x = layout[i][0] * (W - 60) + 30;
+    a.y = layout[i][1] * 400 + 30;
+  });
+  nodeStates = {};
+  articles.forEach(a => nodeStates[a.id] = 'normal');
+  drawGraph();
+}
+
+function drawArrow(x1,y1,x2,y2,r2,col,alpha,width,dashed) {
+  const dx=x2-x1, dy=y2-y1, len=Math.sqrt(dx*dx+dy*dy);
+  if(len<1) return;
+  const ux=dx/len, uy=dy/len;
+  const sx=x1+ux*r2, sy=y1+uy*r2;
+  const ex=x2-ux*(r2+2), ey=y2-uy*(r2+2);
+  gctx.save();
+  gctx.globalAlpha=alpha;
+  gctx.strokeStyle=col; gctx.lineWidth=width;
+  if(dashed) gctx.setLineDash([4,4]); else gctx.setLineDash([]);
+  gctx.beginPath(); gctx.moveTo(sx,sy); gctx.lineTo(ex,ey); gctx.stroke();
+  // arrowhead
+  const angle=Math.atan2(ey-sy,ex-sx);
+  const hs=7;
+  gctx.beginPath();
+  gctx.moveTo(ex,ey);
+  gctx.lineTo(ex-hs*Math.cos(angle-0.45), ey-hs*Math.sin(angle-0.45));
+  gctx.lineTo(ex-hs*Math.cos(angle+0.45), ey-hs*Math.sin(angle+0.45));
+  gctx.closePath(); gctx.fillStyle=col; gctx.fill();
+  gctx.restore();
+}
+
+function drawGraph() {
+  const W=graphCanvas.width, H=graphCanvas.height;
+  gctx.clearRect(0,0,W,H);
+  gctx.fillStyle='#0c1220'; gctx.fillRect(0,0,W,H);
+
+  // Draw edges
+  for (const [src,dst] of citations) {
+    if(src===dst) continue;
+    const a=articles[src], b=articles[dst];
+    const key=`${Math.min(src,dst)}-${Math.max(src,dst)}`;
+    const isMutual = mutuals.has(key);
+    const stSrc = nodeStates[src], stDst = nodeStates[dst];
+    let col='#1e3a4a', alpha=0.5, width=1;
+    if(stSrc==='source'||stSrc==='active'||stSrc==='visited') {
+      if(stDst==='active'||stDst==='visited') { col='#00c8ff'; alpha=.9; width=2; }
+      else { col='#00c8ff'; alpha=.4; width=1.5; }
+    }
+    if(isMutual) col='#a855f7';
+    drawArrow(a.x,a.y,b.x,b.y,b.r,col,alpha,width,isMutual&&src>dst);
+  }
+
+  // Draw nodes
+  for (const a of articles) {
+    const st = nodeStates[a.id];
+    const base = scoreColor(a.score);
+    let glow = 0, fill = base+'22', stroke = base, textCol = base;
+
+    if(st==='source')  { glow=18; fill=base+'55'; stroke=base; }
+    if(st==='active')  { glow=14; fill=base+'44'; stroke=base; }
+    if(st==='visited') { glow=6;  fill=base+'22'; stroke=base+'88'; textCol=base+'aa'; }
+    if(st==='fake')    { glow=20; fill='#ff224433'; stroke='#ff2244'; }
+    if(a.id===hoveredNode) { glow=Math.max(glow,12); }
+
+    if(glow>0) {
+      gctx.save();
+      gctx.shadowColor=stroke; gctx.shadowBlur=glow;
+      gctx.beginPath(); gctx.arc(a.x,a.y,a.r,0,Math.PI*2);
+      gctx.strokeStyle=stroke; gctx.lineWidth=2; gctx.stroke();
+      gctx.restore();
+    }
+    gctx.beginPath(); gctx.arc(a.x,a.y,a.r,0,Math.PI*2);
+    gctx.fillStyle=fill; gctx.fill();
+    gctx.strokeStyle=stroke; gctx.lineWidth=st==='source'?2.5:1.5;
+    gctx.setLineDash([]); gctx.stroke();
+
+    // ID
+    gctx.fillStyle=textCol; gctx.font=`bold 11px Orbitron, monospace`;
+    gctx.textAlign='center'; gctx.textBaseline='middle';
+    gctx.fillText(a.id, a.x, a.y);
+
+    // Label
+    const shortTitle = a.titre.split(' ').slice(0,2).join(' ');
+    gctx.fillStyle=textCol+'cc'; gctx.font=`9px Share Tech Mono, monospace`;
+    gctx.fillText(shortTitle, a.x, a.y + a.r + 11);
+    gctx.fillText(a.source, a.x, a.y + a.r + 21);
+  }
+}
+
+function resetGraph() {
+  if(animTimer) { clearTimeout(animTimer); animTimer=null; }
+  pendingMode = null;
+  articles.forEach(a => nodeStates[a.id]='normal');
+  drawGraph();
+  document.getElementById('graph-info').textContent = '💡 Cliquez sur un nœud pour inspecter l\'article — utilisez les boutons pour lancer une simulation BFS';
+  document.getElementById('bfs-panel').style.display='none';
+}
+
+function startDemo(mode) {
+  resetGraph();
+  pendingMode = mode;
+  document.getElementById('graph-info').textContent =
+    mode==='propagation'
+      ? '📡 Sélectionnez un article source pour simuler la propagation (BFS inverse — qui va relayer l\'info?)'
+      : '🔍 Sélectionnez un article pour voir les articles accessibles via ses citations (BFS direct)';
+}
+
+function detectFakes() {
+  resetGraph();
+  let fakeList = [];
+  for (const a of articles) {
+    const cls = classifyArticle(a);
+    if(cls==='FAKE'||cls==='SUSPECT') { nodeStates[a.id]='fake'; fakeList.push(`#${a.id} ${a.source} (${cls})`); }
+    else nodeStates[a.id]='visited';
+  }
+  drawGraph();
+  document.getElementById('graph-info').innerHTML =
+    `🧪 <span style="color:var(--red)">Résultat : ${fakeList.length} articles suspects/fake</span> — ${fakeList.join(' | ')}`;
+}
+
+function runBFS(startId, mode) {
+  const visited = new Set([startId]);
+  const levels = [[startId]];
+  let queue = [startId];
+  while(queue.length>0) {
+    const next=[];
+    for(const id of queue) {
+      let neighbors=[];
+      if(mode==='propagation') {
+        // inverse: who cites id?
+        neighbors = citations.filter(([s,d])=>d===id).map(([s])=>s);
+      } else {
+        // forward: what does id cite?
+        neighbors = citations.filter(([s,d])=>s===id).map(([,d])=>d);
+      }
+      for(const n of neighbors) if(!visited.has(n)){ visited.add(n); next.push(n); }
+    }
+    if(next.length>0) levels.push(next);
+    queue=next;
+  }
+  return levels;
+}
+
+function animateBFS(startId, mode) {
+  const levels = runBFS(startId, mode);
+  const a = articles[startId];
+  const modeLabel = mode==='propagation'
+    ? `simulerPropagation(g, ${startId}) — BFS inverse`
+    : `articlesAccessibles(g, ${startId}) — BFS direct`;
+
+  let logHtml = `<span style="color:var(--green)">▶ Source: Article ${startId} "${a.titre}"</span><br>`;
+  levels.forEach((lv,i) => {
+    const color = i===0?'var(--cyan)':mode==='propagation'?'var(--red)':'var(--green)';
+    const label = i===0?'SOURCE':`Niveau ${i}`;
+    logHtml += `<span style="color:${color}">${label}:</span> ${lv.map(id=>`[${id}] ${articles[id].source}`).join(' → ')}<br>`;
+  });
+  logHtml += `<br><span style="color:var(--amber)">Total atteints: ${[...levels].flat().length} articles</span>`;
+
+  document.getElementById('bfs-title').textContent = modeLabel;
+  document.getElementById('bfs-log').innerHTML = logHtml;
+  document.getElementById('bfs-panel').style.display='block';
+
+  // Animate
+  levels.forEach((lv,i) => {
+    const t = setTimeout(() => {
+      lv.forEach(id => nodeStates[id] = i===0?'source':'active');
+      drawGraph();
+      if(i>0) {
+        setTimeout(()=>{ lv.forEach(id=>nodeStates[id]='visited'); drawGraph(); }, 600);
+      }
+    }, i*900);
+    animTimer=t;
+  });
+}
+
+// Mouse events
+graphCanvas.addEventListener('mousemove', e => {
+  const rect=graphCanvas.getBoundingClientRect();
+  const scaleX=graphCanvas.width/rect.width, scaleY=graphCanvas.height/rect.height;
+  const mx=(e.clientX-rect.left)*scaleX, my=(e.clientY-rect.top)*scaleY;
+  let found=null;
+  for(const a of articles) {
+    const dx=a.x-mx, dy=a.y-my;
+    if(Math.sqrt(dx*dx+dy*dy)<=a.r+4){ found=a; break; }
+  }
+  if(found!==hoveredNode) { hoveredNode=found?found.id:null; drawGraph(); }
+  if(found) {
+    const tt=document.getElementById('tooltip');
+    const cls=classifyArticle(found);
+    const colors={'FAKE':'var(--red)','SUSPECT':'var(--amber)','FIABLE':'var(--green)'};
+    document.getElementById('tt-title').textContent=found.titre;
+    document.getElementById('tt-source').textContent=found.source;
+    document.getElementById('tt-score').textContent=found.score+'/100';
+    document.getElementById('tt-date').textContent=found.date;
+    document.getElementById('tt-status').innerHTML=`<span style="color:${colors[cls]}">● ${cls}</span>`;
+    tt.style.left=(e.clientX+14)+'px'; tt.style.top=(e.clientY-10)+'px'; tt.style.opacity=1;
+  } else {
+    document.getElementById('tooltip').style.opacity=0;
+  }
+});
+
+graphCanvas.addEventListener('mouseleave',()=>{ document.getElementById('tooltip').style.opacity=0; hoveredNode=null; drawGraph(); });
+
+graphCanvas.addEventListener('click', e => {
+  const rect=graphCanvas.getBoundingClientRect();
+  const scaleX=graphCanvas.width/rect.width, scaleY=graphCanvas.height/rect.height;
+  const mx=(e.clientX-rect.left)*scaleX, my=(e.clientY-rect.top)*scaleY;
+  for(const a of articles) {
+    const dx=a.x-mx, dy=a.y-my;
+    if(Math.sqrt(dx*dx+dy*dy)<=a.r+6) {
+      if(pendingMode) {
+        if(animTimer) clearTimeout(animTimer);
+        articles.forEach(x=>nodeStates[x.id]='normal');
+        animateBFS(a.id, pendingMode);
+        document.getElementById('graph-info').innerHTML =
+          `🎯 Simulation lancée depuis <strong style="color:var(--cyan)">Article ${a.id} — ${a.source}</strong> (${pendingMode==='propagation'?'BFS inverse':'BFS direct'})`;
+        pendingMode=null;
+      } else {
+        const degIn = citations.filter(([s,d])=>d===a.id).length;
+        const degOut = citations.filter(([s,d])=>s===a.id).length;
+        const cls=classifyArticle(a);
+        const colors={'FAKE':'#ff2244','SUSPECT':'#ffb800','FIABLE':'#00e87a'};
+        document.getElementById('graph-info').innerHTML =
+          `📄 <strong style="color:${colors[cls]}">Article ${a.id}</strong> — ${a.titre} | `+
+          `Source: ${a.source} | Score: ${a.score}/100 | `+
+          `degré entrant: <strong>${degIn}</strong> | degré sortant: <strong>${degOut}</strong> | `+
+          `<span style="color:${colors[cls]}">${cls}</span>`;
+      }
+      break;
+    }
+  }
+});
+
+window.addEventListener('resize', initGraph);
+
+// ═══════════════════════════════════════════════════════
+// SCORE ANALYSIS
+// ═══════════════════════════════════════════════════════
+function buildScoreGrid() {
+  const grid = document.getElementById('score-grid');
+  articles.forEach(a => {
+    const cls = classifyArticle(a);
+    const col = scoreColor(a.score);
+    const tagClass = cls==='FAKE'?'tag-fake':cls==='SUSPECT'?'tag-suspect':'tag-fiable';
+    const row = document.createElement('div');
+    row.className='score-row';
+    row.innerHTML=`
+      <div class="score-id">${a.id}</div>
+      <div class="score-label" title="${a.titre}">${a.titre}</div>
+      <div class="score-bar-bg">
+        <div class="score-bar" data-w="${a.score}" style="background:${col};width:0%"></div>
+      </div>
+      <div class="score-val" style="color:${col}">${a.score}</div>
+      <div class="score-tag ${tagClass}">${cls}</div>
+    `;
+    grid.appendChild(row);
+  });
+  // Animate bars on scroll
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting) {
+        document.querySelectorAll('.score-bar').forEach(b => {
+          b.style.width = b.dataset.w+'%';
+        });
+        obs.disconnect();
+      }
+    });
+  });
+  obs.observe(grid);
+}
+
+// ═══════════════════════════════════════════════════════
+// FEATURES GRID
+// ═══════════════════════════════════════════════════════
+const features = [
+  { n:1,  icon:'📂', cat:'RÉSEAU', title:'Charger un réseau',           desc:'Parsing du fichier DB.txt — articles (A) et citations (C) avec format structuré' },
+  { n:2,  icon:'➕', cat:'RÉSEAU', title:'Ajouter un article',           desc:'Saisie interactive, realloc dynamique, incrémentation ID' },
+  { n:3,  icon:'🔗', cat:'RÉSEAU', title:'Ajouter une citation',         desc:'Insertion dans adjList[src], degre_in[dest]++' },
+  { n:4,  icon:'🗑', cat:'RÉSEAU', title:'Supprimer un article',         desc:'Suppression + réindexation par swap avec le dernier' },
+  { n:5,  icon:'✂', cat:'RÉSEAU', title:'Supprimer une citation',       desc:'Parcours de la liste d\'adjacence, degre_in[dest]--' },
+  { n:6,  icon:'🖥', cat:'RÉSEAU', title:'Afficher le réseau',           desc:'Tous les articles avec leurs listes d\'adjacence' },
+  { n:7,  icon:'→',  cat:'ANALYSE',title:'Articles cités par A',         desc:'Parcours de adjList[idSrc]' },
+  { n:8,  icon:'←',  cat:'ANALYSE',title:'Articles citant A',            desc:'Parcours de tous les adjList pour trouver idDest' },
+  { n:9,  icon:'🌱', cat:'ANALYSE',title:'Sources originales / Isolés',  desc:'Sources : degre_in=0 | Isolés : degre_in=0 ET adjList vide' },
+  { n:10, icon:'🏆', cat:'ANALYSE',title:'Article le plus cité',         desc:'Max degre_in dans le tableau' },
+  { n:11, icon:'📅', cat:'ANALYSE',title:'Trier par date',               desc:'Bubble sort sur articles[], adjList[] et degre_in[]' },
+  { n:12, icon:'⏱', cat:'ANALYSE',title:'Premier article citant',       desc:'Parcours pour trouver le premier citant chronologique' },
+  { n:13, icon:'🔗', cat:'PROPAGATION',title:'Chaîne de propagation',   desc:'BFS inverse + tri bulles chronologique' },
+  { n:14, icon:'📡', cat:'PROPAGATION',title:'Simuler propagation',      desc:'BFS inverse avec scoreProp[i]=scoreProp[parent]×(score/100)' },
+  { n:15, icon:'🗺', cat:'PROPAGATION',title:'Articles accessibles',     desc:'BFS direct sur adjList — transitivité des citations' },
+  { n:16, icon:'🧪', cat:'DETECTION', title:'Analyser les articles',     desc:'Détection phrases fakes + mots suspects + score < 30' },
+  { n:17, icon:'⚠', cat:'DETECTION', title:'Suspects les plus cités',   desc:'Intersection suspects ET degre_in > 0' },
+  { n:18, icon:'🎭', cat:'BONUS',    title:'Simuler suppression',        desc:'Analyse d\'impact sans modifier réellement le graphe' },
+  { n:19, icon:'🛡', cat:'BONUS',    title:'Neutraliser propagation',    desc:'Supprime une citation, compare BFS avant/après' },
+];
+
+function buildFeaturesGrid() {
+  const catColors = { 'RÉSEAU':'var(--cyan)', 'ANALYSE':'var(--green)', 'PROPAGATION':'var(--amber)', 'DETECTION':'var(--red)', 'BONUS':'var(--purple)' };
+  const grid = document.getElementById('features-grid');
+  features.forEach(f => {
+    const el = document.createElement('div');
+    el.className='feature-card';
+    el.innerHTML=`
+      <div class="feature-num">${String(f.n).padStart(2,'0')}</div>
+      <div class="feature-icon">${f.icon}</div>
+      <div class="feature-text">
+        <div class="feature-cat" style="color:${catColors[f.cat]};background:${catColors[f.cat]}22">${f.cat}</div>
+        <h4>${f.title}</h4>
+        <p>${f.desc}</p>
+      </div>
+    `;
+    grid.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  initGraph();
+  buildScoreGrid();
+  buildFeaturesGrid();
+});
+</script>
+</body>
+</html>
