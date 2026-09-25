@@ -1,7 +1,7 @@
 # 🔍fake news detection system 
 
 
-A C application that models an information network as a **directed graph**, where each node is a web article and each arc `A → B` means article A cites article B. The program detects misinformation, simulates how fake news spreads through the network, and classifies articles by reliability score.
+A C-based graph-driven misinformation detection system that models information networks as directed graphs, combining NLP-inspired lexical analysis, reliability scoring, citation-pattern analysis, and BFS-based propagation simulation, with an architecture designed for future machine learning (ML) classification.
 
 ---
 
